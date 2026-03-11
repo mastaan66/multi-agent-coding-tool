@@ -92,6 +92,7 @@ def setup_api_key() -> str:
     console.print()
     console.print("  [dim]Your API key is needed to power the AI agents.[/dim]")
     console.print("  [dim]It will be saved locally in .env (never shared).[/dim]")
+    console.print("  [dim]Leave blank to run in Demo Mode (Mock LLM response).[/dim]")
     console.print()
 
     while True:
@@ -106,7 +107,11 @@ def setup_api_key() -> str:
         api_key = api_key.strip()
 
         if not api_key:
-            console.print("  [red]API key cannot be empty.[/red]")
+            try:
+                if Confirm.ask("  [yellow]Run in Demo Mode (Mock LLM)?[/yellow]", default=True):
+                    return ""
+            except (KeyboardInterrupt, EOFError):
+                _graceful_exit()
             continue
 
         if not api_key.startswith("sk-"):
@@ -218,20 +223,26 @@ def run_interactive():
             and len(settings.openai_api_key) > 10
         )
 
+        is_demo = False
         if has_key:
             masked = settings.openai_api_key[:7] + "..." + settings.openai_api_key[-4:]
             console.print(f"  [green]✓ API key loaded:[/green] [dim]{masked}[/dim]")
         else:
-            setup_api_key()
+            api_key = setup_api_key()
+            if not api_key:
+                is_demo = True
 
         # Step 2: Model
-        console.print(f"  [green]✓ Current model:[/green] [dim]{settings.openai_model_name}[/dim]")
-        try:
-            if Confirm.ask("\n  [dim]Change model or settings?[/dim]", default=False):
-                setup_model()
-                setup_iterations()
-        except (KeyboardInterrupt, EOFError):
-            _graceful_exit()
+        if is_demo:
+            console.print("  [green]✓ Demo Mode:[/green] [dim]Mock LLM (No API Key)[/dim]")
+        else:
+            console.print(f"  [green]✓ Current model:[/green] [dim]{settings.openai_model_name}[/dim]")
+            try:
+                if Confirm.ask("\n  [dim]Change model or settings?[/dim]", default=False):
+                    setup_model()
+                    setup_iterations()
+            except (KeyboardInterrupt, EOFError):
+                _graceful_exit()
 
         # Step 3: Project prompt
         user_request = get_project_prompt()
@@ -240,9 +251,10 @@ def run_interactive():
         print_divider("Ready to Build")
         console.print()
 
+        model_display = "Demo Mode (Mock LLM)" if is_demo else settings.openai_model_name
         summary_panel = Panel(
             f"[bold white]{user_request}[/bold white]\n\n"
-            f"[dim]Model:[/dim] {settings.openai_model_name}  "
+            f"[dim]Model:[/dim] {model_display}  "
             f"[dim]Review loops:[/dim] {settings.max_review_iterations}  "
             f"[dim]Test-fix loops:[/dim] {settings.max_test_fix_iterations}",
             title="[bold cyan]Project Summary[/bold cyan]",
@@ -260,7 +272,7 @@ def run_interactive():
 
         # Step 5: Run pipeline
         console.print()
-        pipeline = Pipeline()
+        pipeline = Pipeline(demo=is_demo)
 
         state = pipeline.run(user_request)
 

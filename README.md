@@ -66,11 +66,13 @@ python3 -m src.main
 
 ### What Happens
 
-1. **Paste your API key** — masked input, auto-saved to `.env`
+1. **Paste your API key** — auto-saved to `.env` *(or leave blank for Demo Mode!)*
 2. **Pick a model** — GPT-4o, 4o-mini, 4.1, 4.1-mini, or 4.1-nano
 3. **Describe your project** — tell the AI team what to build
 4. **Watch the agents work** — live spinners show each stage
 5. **Get your project** — complete code in `output/`
+
+> **Note on Demo Mode:** If you hit enter without an API key, the app runs in Demo Mode using mock LLM responses. It perfectly simulates the 7-stage pipeline running at real-time speeds and generates a complete, working FastAPI Todo application to showcase the output format.
 
 ### Direct Mode (Power Users)
 
