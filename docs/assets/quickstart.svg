@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="title desc">
+  <title id="title">AI Software Factory quick start terminal</title>
+  <desc id="desc">Install and run a demo from a terminal.</desc>
+  <rect width="1200" height="680" rx="26" fill="#07101f"/>
+  <rect x="36" y="36" width="1128" height="608" rx="18" fill="#0d1729" stroke="#284461" stroke-width="2"/>
+  <circle cx="76" cy="76" r="10" fill="#ff6b6b"/>
+  <circle cx="108" cy="76" r="10" fill="#ffd166"/>
+  <circle cx="140" cy="76" r="10" fill="#55e69b"/>
+  <text x="600" y="84" text-anchor="middle" fill="#7897ad" font-family="monospace" font-size="18">terminal — ai-factory</text>
+  <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="23">
+    <text x="72" y="145" fill="#55e69b">$</text>
+    <text x="100" y="145" fill="#e8f4ff">curl -fsSL https://raw.githubusercontent.com/mastaan66/</text>
+    <text x="100" y="177" fill="#e8f4ff">multi-agent-coding-tool/main/install.sh | sh</text>
+    <text x="72" y="226" fill="#55e69b">$</text>
+    <text x="100" y="226" fill="#e8f4ff">ai-factory --demo "Build a todo API"</text>
+    <text x="72" y="284" fill="#62d7ff">🏗  [1/7] Planning</text>
+    <text x="430" y="284" fill="#8ca9bc">architecture ready</text>
+    <text x="72" y="326" fill="#62d7ff">💻 [2/7] Code Generation</text>
+    <text x="430" y="326" fill="#8ca9bc">7 files generated</text>
+    <text x="72" y="368" fill="#62d7ff">🔍 [3/7] Code Review</text>
+    <text x="430" y="368" fill="#8ca9bc">quality: good</text>
+    <text x="72" y="410" fill="#62d7ff">🧪 [5/7] Test Generation</text>
+    <text x="430" y="410" fill="#8ca9bc">3 tests generated</text>
+    <text x="72" y="452" fill="#62d7ff">▶  [6/7] Test Execution</text>
+    <text x="430" y="452" fill="#55e69b">all tests passed</text>
+    <text x="72" y="494" fill="#62d7ff">🚀 [7/7] Deployment</text>
+    <text x="430" y="494" fill="#8ca9bc">Docker + CI ready</text>
+    <rect x="68" y="540" width="1064" height="68" rx="12" fill="#102d2c" stroke="#55e69b"/>
+    <text x="96" y="582" fill="#c8ffe1">✓ output/todo_api_YYYYMMDD_HHMMSS</text>
+  </g>
+</svg>

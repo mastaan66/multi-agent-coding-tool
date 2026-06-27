@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="title desc">
+  <title id="title">AI Software Factory</title>
+  <desc id="desc">Open-source multi-agent software generation from the terminal.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#081126"/>
+      <stop offset="0.55" stop-color="#102a43"/>
+      <stop offset="1" stop-color="#0d4f4b"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#52d3ff"/>
+      <stop offset="1" stop-color="#55f2a6"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1280" height="420" rx="28" fill="url(#background)"/>
+  <g opacity="0.16" stroke="#8ddcff">
+    <path d="M0 84h1280M0 168h1280M0 252h1280M0 336h1280"/>
+    <path d="M160 0v420M320 0v420M480 0v420M640 0v420M800 0v420M960 0v420M1120 0v420"/>
+  </g>
+  <g transform="translate(85 78)">
+    <rect width="180" height="180" rx="42" fill="#0c1931" stroke="url(#accent)" stroke-width="4"/>
+    <g fill="none" stroke="url(#accent)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+      <path d="M45 124V72l45-26 45 26v52l-45 26z"/>
+      <path d="M45 72l45 27 45-27M90 99v51"/>
+      <circle cx="90" cy="46" r="11" fill="#55f2a6" stroke="none"/>
+    </g>
+  </g>
+  <text x="315" y="144" fill="#f3fbff" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="64" font-weight="750">AI Software Factory</text>
+  <text x="318" y="203" fill="#b8d9e8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="27">A multi-agent coding pipeline for planning, building, reviewing,</text>
+  <text x="318" y="242" fill="#b8d9e8" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="27">testing, and packaging complete software projects.</text>
+  <g transform="translate(318 286)" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="19" font-weight="650">
+    <rect width="174" height="44" rx="22" fill="#123d55" stroke="#52d3ff"/>
+    <text x="27" y="29" fill="#aeeeff">OPEN SOURCE</text>
+    <rect x="190" width="174" height="44" rx="22" fill="#16483d" stroke="#55f2a6"/>
+    <text x="225" y="29" fill="#b9ffd9">LOCAL CLI</text>
+    <rect x="380" width="218" height="44" rx="22" fill="#2d315d" stroke="#9fa8ff"/>
+    <text x="412" y="29" fill="#d7dbff">MULTI-AGENT</text>
+  </g>
+</svg>

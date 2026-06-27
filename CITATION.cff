@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use AI Software Factory in research or education, please cite the project."
+title: "AI Software Factory"
+type: software
+version: 0.2.0
+date-released: 2026-06-27
+license: MIT
+repository-code: "https://github.com/mastaan66/multi-agent-coding-tool"
+url: "https://github.com/mastaan66/multi-agent-coding-tool"
+authors:
+  - name: "AI Software Factory contributors"

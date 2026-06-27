@@ -11,6 +11,11 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.spec
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
 
 # Output
 output/*/
