@@ -47,6 +47,7 @@ select = ["E4", "E7", "E9", "F"]
 
 [tool.mypy]
 python_version = "3.10"
+no_site_packages = true
 files = [
     "src/core/config.py",
     "src/core/errors.py",

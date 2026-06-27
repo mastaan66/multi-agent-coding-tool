@@ -11,6 +11,7 @@ from scripts.package_release import (
 
 def test_normalizes_release_targets() -> None:
     assert normalize_platform("Darwin") == "macos"
+    assert normalize_platform("macos") == "macos"
     assert normalize_architecture("aarch64") == "arm64"
 
 

@@ -14,7 +14,12 @@ from pathlib import Path
 def normalize_platform(value: str) -> str:
     """Normalize operating-system names used in release assets."""
     normalized = value.lower()
-    aliases = {"darwin": "macos", "linux": "linux", "windows": "windows"}
+    aliases = {
+        "darwin": "macos",
+        "macos": "macos",
+        "linux": "linux",
+        "windows": "windows",
+    }
     try:
         return aliases[normalized]
     except KeyError as error:
