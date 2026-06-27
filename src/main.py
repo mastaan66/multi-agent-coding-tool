@@ -211,7 +211,7 @@ def get_project_prompt() -> str:
 # Interactive Mode
 # ──────────────────────────────────────────────
 
-def run_interactive():
+def run_interactive(demo: bool = False):
     """Run the full interactive terminal experience."""
     try:
         print_banner()
@@ -223,14 +223,15 @@ def run_interactive():
             and len(settings.openai_api_key) > 10
         )
 
-        is_demo = False
-        if has_key:
-            masked = settings.openai_api_key[:7] + "..." + settings.openai_api_key[-4:]
-            console.print(f"  [green]✓ API key loaded:[/green] [dim]{masked}[/dim]")
-        else:
-            api_key = setup_api_key()
-            if not api_key:
-                is_demo = True
+        is_demo = demo
+        if not is_demo:
+            if has_key:
+                masked = settings.openai_api_key[:7] + "..." + settings.openai_api_key[-4:]
+                console.print(f"  [green]✓ API key loaded:[/green] [dim]{masked}[/dim]")
+            else:
+                api_key = setup_api_key()
+                if not api_key:
+                    is_demo = True
 
         # Step 2: Model
         if is_demo:
@@ -311,26 +312,90 @@ def run_interactive():
 # ──────────────────────────────────────────────
 
 def main():
-    """Main entry point — supports both interactive and direct modes."""
+    """Main entry point."""
     load_dotenv()
-
-    # If called with a prompt argument, run directly (power-user mode)
-    if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
-        user_request = " ".join(sys.argv[1:])
-        _run_direct(user_request)
-    elif "--help" in sys.argv or "-h" in sys.argv:
-        _print_help()
+    
+    parser = argparse.ArgumentParser(
+        description="AI Software Factory — Multiple specialized AI agents collaborating like a real engineering team.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  ai-factory                              Launch interactive mode (recommended)
+  ai-factory "Create a REST API"          Run directly with a prompt
+  ai-factory --demo "Build a snake game"  Run in demo mode (no API key required)
+  ai-factory -m gpt-4.1-mini "..."        Use a specific model
+"""
+    )
+    
+    parser.add_argument(
+        "prompt", 
+        nargs="*", 
+        help="Project description prompt. If provided, runs in direct mode. If omitted, runs interactively."
+    )
+    parser.add_argument(
+        "-m", "--model",
+        help="Override the LLM model to use (e.g. gpt-4o, gpt-4.1-mini)",
+    )
+    parser.add_argument(
+        "--api-key",
+        help="Pass OpenAI API key directly",
+    )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        help="Run in demo mode (Mock LLM) without requiring an API key",
+    )
+    parser.add_argument(
+        "--review-loops",
+        type=int,
+        help="Maximum review-improve cycles",
+    )
+    parser.add_argument(
+        "--test-loops",
+        type=int,
+        help="Maximum test-fix cycles",
+    )
+    parser.add_argument(
+        "--output-dir",
+        help="Directory to save the generated project",
+    )
+    
+    # Custom help output to include the banner
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print_banner()
+        parser.print_help()
+        sys.exit(0)
+        
+    args = parser.parse_args()
+    
+    # Update settings from CLI args
+    if args.model:
+        settings.openai_model_name = args.model
+    if args.api_key:
+        settings.openai_api_key = args.api_key
+    if args.review_loops:
+        settings.max_review_iterations = args.review_loops
+    if args.test_loops:
+        settings.max_test_fix_iterations = args.test_loops
+    if args.output_dir:
+        from pathlib import Path
+        settings.output_path = Path(args.output_dir)
+        
+    prompt = " ".join(args.prompt).strip()
+    
+    if prompt:
+        _run_direct(prompt, demo=args.demo)
     else:
-        run_interactive()
+        run_interactive(demo=args.demo)
 
 
-def _run_direct(user_request: str):
+def _run_direct(user_request: str, demo: bool = False):
     """Run pipeline directly with a prompt (no wizard)."""
-    if not settings.openai_api_key or settings.openai_api_key == "sk-your-api-key-here":
-        console.print("[red]Error:[/red] Set OPENAI_API_KEY in .env or environment.")
+    if not demo and (not settings.openai_api_key or settings.openai_api_key == "sk-your-api-key-here"):
+        console.print("[red]Error:[/red] Set OPENAI_API_KEY in .env or environment, or use --demo.")
         sys.exit(1)
 
-    pipeline = Pipeline()
+    pipeline = Pipeline(demo=demo)
     try:
         state = pipeline.run(user_request)
         if state.errors:
@@ -344,26 +409,6 @@ def _run_direct(user_request: str):
         sys.exit(1)
 
 
-def _print_help():
-    """Print usage help."""
-    print_banner()
-    console.print("[bold]Usage:[/bold]")
-    console.print()
-    console.print("  [cyan]python3 -m src.main[/cyan]")
-    console.print("    Launch interactive mode (recommended)")
-    console.print()
-    console.print('  [cyan]python3 -m src.main "Create a REST API for todos"[/cyan]')
-    console.print("    Run directly with a prompt")
-    console.print()
-    console.print("  [cyan]./run.sh[/cyan]")
-    console.print("    One-command launch (auto-activates virtualenv)")
-    console.print()
-    console.print("[bold]Environment:[/bold]")
-    console.print()
-    console.print("  OPENAI_API_KEY     Your OpenAI API key")
-    console.print("  OPENAI_MODEL_NAME  Model to use (default: gpt-4o)")
-    console.print()
-
-
 if __name__ == "__main__":
     main()
+
