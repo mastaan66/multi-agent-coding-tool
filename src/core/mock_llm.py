@@ -11,7 +11,7 @@ import random
 
 MOCK_PLAN = {
     "project_name": "todo_api",
-    "description": "A RESTful Todo API with CRUD operations, user authentication, and SQLite storage.",
+    "description": "A RESTful Todo API with CRUD operations and SQLite storage.",
     "tech_stack": ["Python", "FastAPI", "SQLite", "Pydantic", "uvicorn"],
     "file_structure": [
         "app/__init__.py",
@@ -19,7 +19,7 @@ MOCK_PLAN = {
         "app/models.py",
         "app/database.py",
         "app/routers/todos.py",
-        "app/routers/auth.py",
+        "app/routers/__init__.py",
         "requirements.txt",
     ],
     "modules": ["app", "app.routers"],
@@ -29,10 +29,8 @@ MOCK_PLAN = {
         {"method": "GET", "path": "/todos/{id}", "description": "Get a specific todo"},
         {"method": "PUT", "path": "/todos/{id}", "description": "Update a todo"},
         {"method": "DELETE", "path": "/todos/{id}", "description": "Delete a todo"},
-        {"method": "POST", "path": "/auth/register", "description": "Register a new user"},
-        {"method": "POST", "path": "/auth/login", "description": "Login and get JWT token"},
     ],
-    "additional_notes": "Uses SQLite for simplicity. JWT-based auth with bcrypt password hashing.",
+    "additional_notes": "Uses SQLite for a deterministic, self-contained demo.",
 }
 
 MOCK_CODE_FILES = [
@@ -46,13 +44,12 @@ MOCK_CODE_FILES = [
         "content": '''"""FastAPI application entry point."""
 
 from fastapi import FastAPI
-from app.routers import todos, auth
+from app.routers import todos
 from app.database import create_tables
 
 app = FastAPI(title="Todo API", version="1.0.0")
 
 app.include_router(todos.router, prefix="/todos", tags=["todos"])
-app.include_router(auth.router, prefix="/auth", tags=["auth"])
 
 
 @app.on_event("startup")
@@ -151,6 +148,11 @@ def create_tables():
         "language": "python",
     },
     {
+        "file_path": "app/routers/__init__.py",
+        "content": '"""API routers."""\n',
+        "language": "python",
+    },
+    {
         "file_path": "app/routers/todos.py",
         "content": '''"""Todo CRUD endpoints."""
 
@@ -199,7 +201,7 @@ async def delete_todo(todo_id: int):
     },
     {
         "file_path": "requirements.txt",
-        "content": "fastapi==0.115.0\\nuvicorn==0.30.0\\npydantic==2.9.0\\nbcrypt==4.2.0\\npython-jose==3.3.0\\n",
+        "content": "fastapi==0.115.0\nuvicorn==0.30.0\npydantic==2.9.0\n",
         "language": "text",
     },
 ]
@@ -298,7 +300,7 @@ services:
             "language": "yaml",
         },
     ],
-    "instructions": "# Deployment\\n\\n## Docker\\n```bash\\ndocker-compose up -d\\n```\\n\\nAPI will be available at http://localhost:8000\\nDocs at http://localhost:8000/docs",
+    "instructions": "# Deployment\n\n## Docker\n```bash\ndocker-compose up -d\n```\n\nAPI will be available at http://localhost:8000\nDocs at http://localhost:8000/docs",
 }
 
 
@@ -309,23 +311,26 @@ services:
 class MockLLM:
     """A fake LLM that returns pre-built responses for demo mode."""
 
-    def __init__(self):
-        self._call_count = 0
-        self._responses = [
-            json.dumps(MOCK_PLAN),
-            json.dumps({"files": MOCK_CODE_FILES}),
-            json.dumps(MOCK_REVIEW),
-            json.dumps({"files": MOCK_CODE_FILES}),  # improved code
-            json.dumps({"files": MOCK_TEST_FILES}),
-            json.dumps(MOCK_TEST_RESULT),
-            json.dumps(MOCK_DEPLOYMENT),
-        ]
+    def __init__(self, delay_range: tuple[float, float] = (0.0, 0.0)) -> None:
+        self._delay_range = delay_range
+        self._responses = {
+            "plan": json.dumps(MOCK_PLAN),
+            "code": json.dumps({"files": MOCK_CODE_FILES}),
+            "review": json.dumps(MOCK_REVIEW),
+            "improvement": json.dumps({"files": MOCK_CODE_FILES}),
+            "tests": json.dumps({"files": MOCK_TEST_FILES}),
+            "test_result": json.dumps(MOCK_TEST_RESULT),
+            "deployment": json.dumps(MOCK_DEPLOYMENT),
+        }
 
-    def call(self, *args, **kwargs):
-        """Simulate an LLM call with a short delay."""
-        delay = random.uniform(1.0, 3.0)
-        time.sleep(delay)
+    def call(self, response_name: str) -> str:
+        """Return a named response so skipped stages cannot shift later output."""
+        try:
+            response = self._responses[response_name]
+        except KeyError as exc:
+            raise ValueError(f"Unknown mock response: {response_name}") from exc
 
-        idx = min(self._call_count, len(self._responses) - 1)
-        self._call_count += 1
-        return self._responses[idx]
+        minimum, maximum = self._delay_range
+        if maximum > 0:
+            time.sleep(random.uniform(minimum, maximum))
+        return response

@@ -1,4 +1,4 @@
-"""Sandboxed code executor — runs commands in a subprocess with timeout."""
+"""Bounded subprocess executor with timeout and captured output."""
 
 import subprocess
 from dataclasses import dataclass
@@ -7,7 +7,7 @@ from pathlib import Path
 
 @dataclass
 class ExecutionResult:
-    """Result of a sandboxed command execution."""
+    """Result of a bounded subprocess execution."""
     return_code: int
     stdout: str
     stderr: str
@@ -24,7 +24,7 @@ def run_command(
     timeout: int = 60,
     env: dict[str, str] | None = None,
 ) -> ExecutionResult:
-    """Execute a command in a sandboxed subprocess.
+    """Execute a command in a subprocess.
 
     Args:
         command: Command and arguments as a list.

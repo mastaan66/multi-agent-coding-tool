@@ -4,18 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-software-factory"
-version = "0.1.0"
+version = "0.2.0"
 description = "AI Software Factory - Multiple specialized agents collaborating like a real engineering team"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "crewai>=0.86.0",
-    "crewai-tools>=0.17.0",
-    "openai>=1.50.0",
-    "pydantic>=2.0.0",
-    "pydantic-settings>=2.0.0",
-    "rich>=13.0.0",
-    "python-dotenv>=1.0.0",
+    "crewai>=0.86.0,<2",
+    "crewai-tools>=0.17.0,<2",
+    "openai>=1.50.0,<3",
+    "pydantic>=2.0.0,<3",
+    "pydantic-settings>=2.0.0,<3",
+    "python-dotenv>=1.0.0,<2",
+    "rich>=13.0.0,<15",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.11,<2",
+    "pytest>=8,<9",
+    "ruff>=0.8,<1",
 ]
 
 [project.scripts]
@@ -24,3 +31,26 @@ ai-factory = "src.main:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.mypy]
+python_version = "3.10"
+files = [
+    "src/core/config.py",
+    "src/core/errors.py",
+    "src/core/models.py",
+    "src/tools",
+]
+check_untyped_defs = true
+ignore_missing_imports = true
+pretty = true

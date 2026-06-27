@@ -9,16 +9,13 @@ Launch:
 from __future__ import annotations
 
 import argparse
-import os
 import sys
-from pathlib import Path
 
 from dotenv import load_dotenv
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.text import Text
-from rich.columns import Columns
 
 from src.core.config import settings, save_api_key
 from src.core.pipeline import Pipeline
@@ -286,7 +283,7 @@ def run_interactive(demo: bool = False):
         console.print(
             Panel(
                 "[bold green]Your project is ready![/bold green]\n\n"
-                f"[dim]Check the output directory for your generated project.[/dim]",
+                "[dim]Check the output directory for your generated project.[/dim]",
                 border_style="green",
                 padding=(1, 2),
             )
@@ -378,8 +375,7 @@ Examples:
     if args.test_loops:
         settings.max_test_fix_iterations = args.test_loops
     if args.output_dir:
-        from pathlib import Path
-        settings.output_path = Path(args.output_dir)
+        settings.output_dir = args.output_dir
         
     prompt = " ".join(args.prompt).strip()
     

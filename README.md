@@ -72,7 +72,7 @@ python3 -m src.main
 4. **Watch the agents work** — live spinners show each stage
 5. **Get your project** — complete code in `output/`
 
-> **Note on Demo Mode:** If you hit enter without an API key, the app runs in Demo Mode using mock LLM responses. It perfectly simulates the 7-stage pipeline running at real-time speeds and generates a complete, working FastAPI Todo application to showcase the output format.
+> **Note on Demo Mode:** If you press enter without an API key, the app runs a deterministic offline simulation and generates a self-contained FastAPI Todo project that demonstrates the complete output format.
 
 ### Direct Mode (Power Users)
 
@@ -99,6 +99,17 @@ Generated projects are written to `output/<project_name>_<timestamp>/` with:
 | `MAX_REVIEW_ITERATIONS` | `3` | Max review-improve cycles |
 | `MAX_TEST_FIX_ITERATIONS` | `3` | Max test-fix cycles |
 | `OUTPUT_DIR` | `output` | Where to write projects |
+
+## Development
+
+Install the development tools and run the local quality gates:
+
+```bash
+python -m pip install -e ".[dev]"
+ruff check .
+mypy
+pytest
+```
 
 ## Project Structure
 
@@ -127,15 +138,14 @@ Multi-Agent/
 └── output/                 # Generated projects
 ```
 
-## Future Enhancements
+## Development Roadmap
 
-- Docker sandbox for code execution
-- Vector database for knowledge memory (ChromaDB)
-- Self-debugging agent
-- Documentation generator agent
-- UI generator agent
-- Security auditor agent
-- Support for Claude, Ollama, and other LLM providers
+The project is evolving from a fixed greenfield generator into a safe,
+repository-aware coding agent with interactive sessions, approvals, sandboxed
+commands, checkpoints, provider adapters, MCP, hooks, and optional parallel
+agents.
+
+See the detailed [product and engineering roadmap](docs/ROADMAP.md).
 
 ## License
 

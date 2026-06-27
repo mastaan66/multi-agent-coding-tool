@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import json
 import re
+import tempfile
 from datetime import datetime
 from pathlib import Path
 
 from crewai import Crew, Process
 from rich.console import Console
 from rich.panel import Panel
-from rich.status import Status
 from rich.table import Table
 from rich.tree import Tree
 
@@ -29,6 +29,7 @@ from src.agents.test_runner import (
 )
 from src.agents.tester import create_test_task, create_tester_agent
 from src.core.config import settings
+from src.core.errors import StructuredOutputError
 from src.core.models import (
     CodeBase,
     DeploymentArtifact,
@@ -62,9 +63,9 @@ def _extract_json(text: str) -> dict:
     """Extract a JSON object from LLM output, tolerating markdown fences."""
     text = text.strip()
 
-    # Try to find JSON within code fences
-    fence_pattern = r"```(?:json)?\s*\n?(.*?)\n?\s*```"
-    match = re.search(fence_pattern, text, re.DOTALL)
+    # Strip a Markdown fence only when it wraps the entire response.
+    fence_pattern = r"```(?:json)?\s*(.*?)\s*```"
+    match = re.fullmatch(fence_pattern, text, re.DOTALL)
     if match:
         text = match.group(1).strip()
 
@@ -77,13 +78,12 @@ def _extract_json(text: str) -> dict:
     return json.loads(text)
 
 
-def _safe_json(text: str, fallback: dict | None = None) -> dict:
-    """Parse JSON with graceful fallback."""
+def _parse_json_response(text: str, stage: str) -> dict:
+    """Parse agent JSON and raise a stage-specific error on failure."""
     try:
         return _extract_json(text)
-    except (json.JSONDecodeError, ValueError) as e:
-        console.print(f"  [yellow]⚠ JSON parse error: {e}[/yellow]")
-        return fallback or {}
+    except (json.JSONDecodeError, ValueError) as error:
+        raise StructuredOutputError(stage, str(error)) from error
 
 
 # ──────────────────────────────────────────────
@@ -117,11 +117,24 @@ class Pipeline:
             temperature=settings.openai_temperature,
         )
 
-    def _run_crew_or_mock(self, agent_fn, task_fn, task_args, spinner_label: str) -> str:
-        """Run a CrewAI crew or return mock response in demo mode."""
+    def _mock_response(self, response_name: str, spinner_label: str) -> str:
+        """Return one deterministic named response in demo mode."""
+        if self._mock_llm is None:
+            raise RuntimeError("Mock LLM is not configured")
+        with console.status(f"[bold cyan]{spinner_label}[/bold cyan]", spinner="dots"):
+            return self._mock_llm.call(response_name)
+
+    def _run_crew_or_mock(
+        self,
+        agent_fn,
+        task_fn,
+        task_args,
+        spinner_label: str,
+        mock_response: str,
+    ) -> str:
+        """Run a CrewAI crew or return a named response in demo mode."""
         if self.demo:
-            with console.status(f"[bold cyan]{spinner_label}[/bold cyan]", spinner="dots"):
-                return self._mock_llm.call()
+            return self._mock_response(mock_response, spinner_label)
 
         agent = agent_fn(self.llm)
         task = task_fn(agent, *task_args)
@@ -185,14 +198,14 @@ class Pipeline:
         self.state.current_stage = PipelineStage.PLANNING
         self._print_stage(0, "Architect agent is designing your system...")
 
-        agent = create_planner_agent(self.llm)
-        task = create_plan_task(agent, self.state.user_request)
-        crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False)
-
-        with console.status("[bold cyan]  Architect agent thinking...[/bold cyan]", spinner="dots"):
-            result = crew.kickoff()
-
-        data = _safe_json(str(result), {"project_name": "project", "tech_stack": [], "file_structure": [], "modules": []})
+        result = self._run_crew_or_mock(
+            create_planner_agent,
+            create_plan_task,
+            (self.state.user_request,),
+            "  Architect agent thinking...",
+            "plan",
+        )
+        data = _parse_json_response(result, "planning")
 
         self.state.plan = ProjectPlan(
             project_name=data.get("project_name", "project"),
@@ -214,15 +227,15 @@ class Pipeline:
         self.state.current_stage = PipelineStage.CODING
         self._print_stage(1, "Engineer agent is writing code...")
 
-        agent = create_coder_agent(self.llm)
         plan_json = self.state.plan.model_dump_json(indent=2)
-        task = create_code_task(agent, plan_json)
-        crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False)
-
-        with console.status("[bold cyan]  Engineer agent coding...[/bold cyan]", spinner="dots"):
-            result = crew.kickoff()
-
-        data = _safe_json(str(result), {"files": []})
+        result = self._run_crew_or_mock(
+            create_coder_agent,
+            create_code_task,
+            (plan_json,),
+            "  Engineer agent coding...",
+            "code",
+        )
+        data = _parse_json_response(result, "coding")
 
         self.state.codebase = CodeBase()
         for f in data.get("files", []):
@@ -245,15 +258,15 @@ class Pipeline:
                 f"Reviewer agent checking code (iteration {iteration}/{settings.max_review_iterations})...",
             )
 
-            reviewer = create_reviewer_agent(self.llm)
             codebase_json = self.state.codebase.model_dump_json(indent=2)
-            review_task = create_review_task(reviewer, codebase_json)
-            crew = Crew(agents=[reviewer], tasks=[review_task], process=Process.sequential, verbose=False)
-
-            with console.status("[bold cyan]  Reviewer agent analyzing...[/bold cyan]", spinner="dots"):
-                result = crew.kickoff()
-
-            data = _safe_json(str(result), {"comments": [], "overall_quality": "good", "summary": ""})
+            result = self._run_crew_or_mock(
+                create_reviewer_agent,
+                create_review_task,
+                (codebase_json,),
+                "  Reviewer agent analyzing...",
+                "review",
+            )
+            data = _parse_json_response(result, "reviewing")
 
             self.state.review_report = ReviewReport(
                 comments=data.get("comments", []),
@@ -279,15 +292,15 @@ class Pipeline:
                 f"Improver agent fixing {self.state.review_report.issue_count} issues...",
             )
 
-            improver = create_improver_agent(self.llm)
             review_json = self.state.review_report.model_dump_json(indent=2)
-            improve_task = create_improve_task(improver, codebase_json, review_json)
-            crew = Crew(agents=[improver], tasks=[improve_task], process=Process.sequential, verbose=False)
-
-            with console.status("[bold cyan]  Improver agent fixing code...[/bold cyan]", spinner="dots"):
-                result = crew.kickoff()
-
-            data = _safe_json(str(result), {"files": []})
+            result = self._run_crew_or_mock(
+                create_improver_agent,
+                create_improve_task,
+                (codebase_json, review_json),
+                "  Improver agent fixing code...",
+                "improvement",
+            )
+            data = _parse_json_response(result, "improving")
 
             improved_codebase = CodeBase()
             for f in data.get("files", []):
@@ -306,16 +319,16 @@ class Pipeline:
         self.state.current_stage = PipelineStage.TESTING
         self._print_stage(4, "QA agent writing tests...")
 
-        agent = create_tester_agent(self.llm)
         codebase_json = self.state.codebase.model_dump_json(indent=2)
         plan_json = self.state.plan.model_dump_json(indent=2)
-        task = create_test_task(agent, codebase_json, plan_json)
-        crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False)
-
-        with console.status("[bold cyan]  QA agent writing tests...[/bold cyan]", spinner="dots"):
-            result = crew.kickoff()
-
-        data = _safe_json(str(result), {"files": []})
+        result = self._run_crew_or_mock(
+            create_tester_agent,
+            create_test_task,
+            (codebase_json, plan_json),
+            "  QA agent writing tests...",
+            "tests",
+        )
+        data = _parse_json_response(result, "testing")
 
         test_count = 0
         for f in data.get("files", []):
@@ -333,22 +346,40 @@ class Pipeline:
         """Stage 6: Execute tests → Analyze → Fix loop."""
         for iteration in range(1, settings.max_test_fix_iterations + 1):
             self.state.current_stage = PipelineStage.TEST_RUNNING
+            self.state.test_fix_iterations = iteration
             self._print_stage(
                 5,
                 f"Running tests (attempt {iteration}/{settings.max_test_fix_iterations})...",
             )
 
-            # Write files to a temporary location and run tests
-            output_dir = settings.output_path / "_test_run"
-            self._write_files_to_dir(output_dir)
-
-            # Execute pytest
-            with console.status("[bold cyan]  Executing pytest...[/bold cyan]", spinner="dots"):
-                exec_result = run_command(
-                    ["python3", "-m", "pytest", "tests/", "-v", "--tb=short"],
-                    cwd=output_dir,
-                    timeout=60,
+            if self.demo:
+                result = self._mock_response(
+                    "test_result", "  Simulating pytest execution..."
                 )
+                data = _parse_json_response(result, "test execution")
+                self.state.test_result = TestResult(
+                    passed=data.get("passed", False),
+                    total_tests=data.get("total_tests", 0),
+                    passed_tests=data.get("passed_tests", 0),
+                    failed_tests=data.get("failed_tests", 0),
+                    failure_analysis=data.get("failure_analysis", ""),
+                )
+                if self.state.test_result.passed:
+                    console.print("  [green]✓ All demo tests passed![/green]")
+                    break
+                continue
+
+            with tempfile.TemporaryDirectory(prefix="ai-factory-test-") as temp_dir:
+                output_dir = Path(temp_dir)
+                self._write_files_to_dir(output_dir)
+                with console.status(
+                    "[bold cyan]  Executing pytest...[/bold cyan]", spinner="dots"
+                ):
+                    exec_result = run_command(
+                        ["python3", "-m", "pytest", "tests/", "-v", "--tb=short"],
+                        cwd=output_dir,
+                        timeout=60,
+                    )
 
             test_output = f"STDOUT:\n{exec_result.stdout}\n\nSTDERR:\n{exec_result.stderr}"
 
@@ -362,18 +393,16 @@ class Pipeline:
                 )
                 break
 
-            # Analyze failures
             console.print("  [yellow]⚠ Some tests failed. Analyzing...[/yellow]")
-
-            runner = create_test_runner_agent(self.llm)
             codebase_json = self.state.codebase.model_dump_json(indent=2)
-            runner_task = create_test_runner_task(runner, test_output, codebase_json)
-            crew = Crew(agents=[runner], tasks=[runner_task], process=Process.sequential, verbose=False)
-
-            with console.status("[bold cyan]  QA analyst investigating failures...[/bold cyan]", spinner="dots"):
-                result = crew.kickoff()
-
-            data = _safe_json(str(result), {"passed": False})
+            result = self._run_crew_or_mock(
+                create_test_runner_agent,
+                create_test_runner_task,
+                (test_output, codebase_json),
+                "  QA analyst investigating failures...",
+                "test_result",
+            )
+            data = _parse_json_response(result, "test analysis")
 
             self.state.test_result = TestResult(
                 passed=data.get("passed", False),
@@ -384,41 +413,46 @@ class Pipeline:
                 stderr=exec_result.stderr,
                 failure_analysis=data.get("failure_analysis", ""),
             )
-            self.state.test_fix_iterations = iteration
-
             if self.state.test_result.passed:
                 break
 
-            # Try to fix
             if iteration < settings.max_test_fix_iterations:
                 self.state.current_stage = PipelineStage.IMPROVING
                 console.print("  [cyan]→ Sending back to Improver agent...[/cyan]")
+                fix_review = json.dumps(
+                    {
+                        "comments": [
+                            {
+                                "file_path": "tests/",
+                                "severity": "critical",
+                                "category": "bug",
+                                "description": self.state.test_result.failure_analysis,
+                                "suggestion": (
+                                    "Fix the code or tests based on the analysis above."
+                                ),
+                            }
+                        ],
+                        "overall_quality": "needs_improvement",
+                        "summary": (
+                            f"Test failures: {self.state.test_result.failed_tests} "
+                            "tests failing."
+                        ),
+                    }
+                )
+                result = self._run_crew_or_mock(
+                    create_improver_agent,
+                    create_improve_task,
+                    (codebase_json, fix_review),
+                    "  Improver agent fixing issues...",
+                    "improvement",
+                )
+                data = _parse_json_response(result, "test fixing")
 
-                improver = create_improver_agent(self.llm)
-                fix_review = json.dumps({
-                    "comments": [{
-                        "file_path": "tests/",
-                        "severity": "critical",
-                        "category": "bug",
-                        "description": self.state.test_result.failure_analysis,
-                        "suggestion": "Fix the code or tests based on the analysis above.",
-                    }],
-                    "overall_quality": "needs_improvement",
-                    "summary": f"Test failures: {self.state.test_result.failed_tests} tests failing.",
-                })
-                improve_task = create_improve_task(improver, codebase_json, fix_review)
-                crew = Crew(agents=[improver], tasks=[improve_task], process=Process.sequential, verbose=False)
-
-                with console.status("[bold cyan]  Improver agent fixing issues...[/bold cyan]", spinner="dots"):
-                    result = crew.kickoff()
-
-                data = _safe_json(str(result), {"files": []})
-
-                for f in data.get("files", []):
+                for file_data in data.get("files", []):
                     self.state.codebase.set_file(
-                        f.get("file_path", "unknown.py"),
-                        f.get("content", ""),
-                        f.get("language", "python"),
+                        file_data.get("file_path", "unknown.py"),
+                        file_data.get("content", ""),
+                        file_data.get("language", "python"),
                     )
 
     def _run_deployment(self):
@@ -426,16 +460,16 @@ class Pipeline:
         self.state.current_stage = PipelineStage.DEPLOYING
         self._print_stage(6, "DevOps agent creating deployment configs...")
 
-        agent = create_deployer_agent(self.llm)
         plan_json = self.state.plan.model_dump_json(indent=2)
         codebase_json = self.state.codebase.model_dump_json(indent=2)
-        task = create_deploy_task(agent, plan_json, codebase_json)
-        crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False)
-
-        with console.status("[bold cyan]  DevOps agent building infrastructure...[/bold cyan]", spinner="dots"):
-            result = crew.kickoff()
-
-        data = _safe_json(str(result), {"files": [], "instructions": ""})
+        result = self._run_crew_or_mock(
+            create_deployer_agent,
+            create_deploy_task,
+            (plan_json, codebase_json),
+            "  DevOps agent building infrastructure...",
+            "deployment",
+        )
+        data = _parse_json_response(result, "deployment")
 
         # Add deployment files to codebase
         for f in data.get("files", []):
@@ -474,7 +508,7 @@ class Pipeline:
             readme_path.write_text(
                 self.state.deployment.instructions, encoding="utf-8"
             )
-            console.print(f"  [green]✓[/green] DEPLOYMENT.md")
+            console.print("  [green]✓[/green] DEPLOYMENT.md")
 
     def _write_files_to_dir(self, output_dir: Path):
         """Write current codebase to a directory (for test execution)."""
