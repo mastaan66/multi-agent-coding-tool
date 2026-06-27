@@ -13,11 +13,11 @@ User Request
 ┌─────────────────────────────────────┐
 │         Pipeline Orchestrator       │
 │                                     │
-│  Planner → Coder → Reviewer ─┐     │
+│  Planner → Coder → Reviewer ─┐      │
 │                          ↕    │     │
 │                      Improver─┘     │
 │                          │          │
-│  Deployer ← Test Runner ←┘         │
+│  Deployer ← Test Runner ←┘          │
 │                    ↕                │
 │                 Improver            │
 └─────────────────────────────────────┘
