@@ -5,6 +5,30 @@ Changelog, and the project uses semantic versioning.
 
 ## Unreleased
 
+## 0.3.0 - 2026-06-28
+
+### Added
+
+- Read-only `ai-factory inspect` output in text and JSON formats.
+- Git-aware repository discovery with file limits and symlink containment.
+- Hierarchical `AGENTS.md` instruction loading.
+- Provider-neutral model events, tool contracts, registry, and bounded runtime.
+- Validated file reading, text search, Git status, and Git diff tools.
+- Repeated tool-call loop detection and runtime lifecycle events.
+
+### Changed
+
+- Exposed the existing project generator through `ai-factory generate` while
+  preserving direct-prompt compatibility.
+- Expanded tests and mypy coverage for repository and runtime components.
+
+### Fixed
+
+- CI now invokes pytest through `python -m pytest` so repository modules resolve
+  consistently after editable installs.
+
+## 0.2.0 - 2026-06-27
+
 ### Added
 
 - Standalone PyInstaller executable builds for Linux, macOS, and Windows.
@@ -13,11 +37,6 @@ Changelog, and the project uses semantic versioning.
 - GitHub release workflow with cross-platform artifacts.
 - Reproducible SVG, GIF, and MP4 documentation media.
 - Community health files and issue templates.
-
-## 0.2.0 - 2026-06-27
-
-### Added
-
 - Typed pipeline and unsafe-path errors.
 - Deterministic offline demo coverage.
 - Pytest, Ruff, mypy, and Python 3.10/3.12 CI.

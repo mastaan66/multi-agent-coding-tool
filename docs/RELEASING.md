@@ -21,9 +21,10 @@ dist/ai-factory --help
 ## Publish
 
 ~~~bash
-git tag -a v0.2.0 -m "AI Software Factory v0.2.0"
+VERSION=v0.3.0
+git tag -a "$VERSION" -m "AI Software Factory ${VERSION#v}"
 git push origin main
-git push origin v0.2.0
+git push origin "$VERSION"
 ~~~
 
 The release workflow builds native archives for:

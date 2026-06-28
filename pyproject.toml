@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-software-factory"
-version = "0.2.0"
+version = "0.3.0"
 description = "AI Software Factory - Multiple specialized agents collaborating like a real engineering team"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -50,8 +50,13 @@ python_version = "3.10"
 no_site_packages = true
 files = [
     "src/core/config.py",
+    "src/core/events.py",
     "src/core/errors.py",
+    "src/core/instructions.py",
     "src/core/models.py",
+    "src/core/repository.py",
+    "src/core/runtime.py",
+    "src/providers",
     "src/tools",
 ]
 check_untyped_defs = true

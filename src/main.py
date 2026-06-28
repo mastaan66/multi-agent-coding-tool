@@ -9,7 +9,9 @@ Launch:
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from pathlib import Path
 
 from dotenv import load_dotenv
 from rich.console import Console
@@ -18,7 +20,9 @@ from rich.prompt import Confirm, IntPrompt, Prompt
 from rich.text import Text
 
 from src.core.config import settings, save_api_key
+from src.core.instructions import load_instruction_hierarchy
 from src.core.pipeline import Pipeline
+from src.core.repository import build_repository_snapshot, format_repository_snapshot
 
 console = Console()
 
@@ -304,39 +308,32 @@ def run_interactive(demo: bool = False):
         sys.exit(1)
 
 
-# ──────────────────────────────────────────────
-# CLI Entry Point
-# ──────────────────────────────────────────────
-
-def main():
-    """Main entry point."""
-    load_dotenv()
-    
+def _create_generate_parser(prog: str = "ai-factory") -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="AI Software Factory — Multiple specialized AI agents collaborating like a real engineering team.",
+        prog=prog,
+        description=(
+            "AI Software Factory — Multiple specialized AI agents "
+            "collaborating like a real engineering team."
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  ai-factory                              Launch interactive mode (recommended)
-  ai-factory "Create a REST API"          Run directly with a prompt
-  ai-factory --demo "Build a snake game"  Run in demo mode (no API key required)
-  ai-factory -m gpt-4.1-mini "..."        Use a specific model
-"""
-    )
-    
-    parser.add_argument(
-        "prompt", 
-        nargs="*", 
-        help="Project description prompt. If provided, runs in direct mode. If omitted, runs interactively."
+  ai-factory generate "Create a REST API"
+  ai-factory generate --demo "Build a snake game"
+  ai-factory "Create a REST API"          Backward-compatible generation
+""",
     )
     parser.add_argument(
-        "-m", "--model",
+        "prompt",
+        nargs="*",
+        help="Project description. If omitted, launches the generation wizard.",
+    )
+    parser.add_argument(
+        "-m",
+        "--model",
         help="Override the LLM model to use (e.g. gpt-4o, gpt-4.1-mini)",
     )
-    parser.add_argument(
-        "--api-key",
-        help="Pass OpenAI API key directly",
-    )
+    parser.add_argument("--api-key", help="Pass OpenAI API key directly")
     parser.add_argument(
         "--demo",
         action="store_true",
@@ -356,16 +353,13 @@ Examples:
         "--output-dir",
         help="Directory to save the generated project",
     )
-    
-    # Custom help output to include the banner
-    if "--help" in sys.argv or "-h" in sys.argv:
-        print_banner()
-        parser.print_help()
-        sys.exit(0)
-        
-    args = parser.parse_args()
-    
-    # Update settings from CLI args
+    return parser
+
+
+def _run_generate_cli(arguments: list[str], *, prog: str = "ai-factory") -> None:
+    parser = _create_generate_parser(prog)
+    args = parser.parse_args(arguments)
+
     if args.model:
         settings.openai_model_name = args.model
     if args.api_key:
@@ -376,13 +370,70 @@ Examples:
         settings.max_test_fix_iterations = args.test_loops
     if args.output_dir:
         settings.output_dir = args.output_dir
-        
+
     prompt = " ".join(args.prompt).strip()
-    
     if prompt:
         _run_direct(prompt, demo=args.demo)
     else:
         run_interactive(demo=args.demo)
+
+
+def _run_inspect_cli(arguments: list[str]) -> None:
+    parser = argparse.ArgumentParser(
+        prog="ai-factory inspect",
+        description="Inspect repository structure without sending content to a model.",
+    )
+    parser.add_argument("path", nargs="?", default=".", help="Repository path")
+    parser.add_argument("--limit", type=int, default=5_000, help="Maximum files to scan")
+    parser.add_argument("--preview", type=int, default=40, help="Files shown in text output")
+    parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+    args = parser.parse_args(arguments)
+
+    snapshot = build_repository_snapshot(args.path, limit=args.limit)
+    requested_path = Path(args.path).expanduser().resolve()
+    target_path = requested_path.relative_to(snapshot.root).as_posix()
+    instructions = load_instruction_hierarchy(snapshot.root, target_path)
+
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "root": str(snapshot.root),
+                    "file_count": len(snapshot.files),
+                    "files": list(snapshot.files),
+                    "languages": dict(snapshot.languages),
+                    "instructions": [
+                        {"path": document.path, "scope": document.scope}
+                        for document in instructions.documents
+                    ],
+                },
+                indent=2,
+            )
+        )
+        return
+
+    console.print(format_repository_snapshot(snapshot, preview_limit=args.preview))
+    if instructions.documents:
+        console.print("Instructions:")
+        for document in instructions.documents:
+            console.print(f"  {document.path} (scope: {document.scope})")
+    else:
+        console.print("Instructions: none")
+
+
+def main() -> None:
+    """Dispatch repository commands while preserving legacy generation usage."""
+    load_dotenv()
+    arguments = sys.argv[1:]
+    if arguments and arguments[0] == "inspect":
+        _run_inspect_cli(arguments[1:])
+        return
+    if arguments and arguments[0] == "generate":
+        _run_generate_cli(arguments[1:], prog="ai-factory generate")
+        return
+    if "--help" in arguments or "-h" in arguments:
+        print_banner()
+    _run_generate_cli(arguments)
 
 
 def _run_direct(user_request: str, demo: bool = False):

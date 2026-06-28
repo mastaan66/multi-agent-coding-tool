@@ -18,7 +18,7 @@ AI_FACTORY_INSTALL_DIR=/usr/local/bin sh install.sh
 Install a specific tagged version:
 
 ~~~bash
-AI_FACTORY_VERSION=v0.2.0 sh install.sh
+AI_FACTORY_VERSION=v0.3.0 sh install.sh
 ~~~
 
 Windows users can download and extract the matching ZIP from GitHub Releases.

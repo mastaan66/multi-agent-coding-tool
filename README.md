@@ -19,10 +19,11 @@ work through architecture, implementation, review, improvement, testing, failure
 analysis, and deployment packaging. It supports live OpenAI-backed generation and a
 deterministic offline demo that needs no API key.
 
-> **Project status:** version 0.2.0 is a reliable greenfield project generator. The
-> repository-aware interactive coding agent is actively planned in
-> [docs/ROADMAP.md](docs/ROADMAP.md). The current subprocess runner is bounded by a
-> timeout but is not yet an OS-enforced sandbox.
+> **Project status:** version 0.3.0 adds read-only repository inspection, scoped
+> AGENTS.md instructions, validated repository tools, and a provider-neutral agent
+> runtime foundation. Greenfield generation remains stable; live repository editing,
+> approvals, and OS-enforced sandboxing are still in progress. See
+> [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Demo
 
@@ -69,7 +70,7 @@ ai-factory --demo "Build a todo API"
 Install a specific version or destination:
 
 ~~~bash
-AI_FACTORY_VERSION=v0.2.0 AI_FACTORY_INSTALL_DIR="$HOME/bin" sh install.sh
+AI_FACTORY_VERSION=v0.3.0 AI_FACTORY_INSTALL_DIR="$HOME/bin" sh install.sh
 ~~~
 
 Windows users can download the x86_64 ZIP from
@@ -104,12 +105,27 @@ options.
 
 ## Quick start
 
+### Repository inspection preview
+
+The v0.3 foundation can discover an existing repository, respect Git ignore rules,
+summarize its language mix, and load applicable AGENTS.md instructions without
+sending repository content to a model:
+
+~~~bash
+ai-factory inspect .
+ai-factory inspect . --json
+~~~
+
+This command is intentionally read-only. The provider-neutral streaming runtime and
+validated read-only tools are now implemented internally; live provider adapters,
+patching, approvals, and sandboxed shell execution remain roadmap work.
+
 ### Offline demo
 
 No API key and no model request are required:
 
 ~~~bash
-ai-factory --demo "Build a REST API for a todo application"
+ai-factory generate --demo "Build a REST API for a todo application"
 ~~~
 
 ### Live generation
@@ -118,14 +134,16 @@ Set an OpenAI API key and launch the interactive setup:
 
 ~~~bash
 export OPENAI_API_KEY="your-key"
-ai-factory
+ai-factory generate
 ~~~
 
 Or pass a direct prompt:
 
 ~~~bash
-ai-factory "Create a URL shortener API with analytics"
+ai-factory generate "Create a URL shortener API with analytics"
 ~~~
+
+Direct prompts without the generate subcommand remain backward compatible.
 
 Useful options:
 

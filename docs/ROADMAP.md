@@ -321,6 +321,15 @@ Exit criteria:
 
 Goal: ship the smallest useful Codex/Claude-style workflow.
 
+Implementation status (started 2026-06-28):
+
+- Complete: provider-neutral model events, tool contracts, registry, bounded runtime,
+  repeated-call detection, repository discovery, Git-aware file listing, bounded file
+  reads, text search, Git status/diff tools, scoped AGENTS.md loading, ai-factory
+  inspect, and the explicit ai-factory generate command.
+- Next: OpenAI and Anthropic adapters, write tools, permission policy, plan mode,
+  cancellation, budgets, and sandboxed shell execution.
+
 - Add provider, model-event, tool, and runtime interfaces.
 - Implement OpenAI and Anthropic adapters, followed by OpenAI-compatible/Ollama.
 - Add list_files, read_file, search, apply_patch, git_status, git_diff, and shell.
