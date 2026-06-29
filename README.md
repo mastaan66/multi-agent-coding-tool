@@ -291,8 +291,9 @@ repository-native coding agent with:
 - AGENTS.md, hooks, skills, and MCP;
 - worktree-isolated parallel agents.
 
-See [docs/ROADMAP.md](docs/ROADMAP.md) for phases, acceptance criteria, and the
-prioritized backlog.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the full product roadmap and
+[docs/MEMORY_HARNESS.md](docs/MEMORY_HARNESS.md) for the token-bounded context,
+durable task-state, and long-running harness architecture now being implemented.
 
 ## Community
 

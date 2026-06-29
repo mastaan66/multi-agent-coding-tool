@@ -371,6 +371,16 @@ Exit criteria:
 
 Goal: create a daily-use terminal experience.
 
+Continuity foundation status (started 2026-06-29):
+
+- Complete: token-bounded context compiler, context and usage events, SQLite session
+  and event storage, normalized message persistence, interruption-safe replay,
+  persistent runtime resume, verification-gated task ledger, compact task-state
+  projection, content-addressed artifacts, artifact-backed large-result truncation,
+  and the durable ORIENT-to-HANDOFF controller.
+- Next: checkpoints, CLI session controls, JSONL export, repository-memory retrieval,
+  invalidation, and user-facing memory controls.
+
 - Replace the setup wizard as default with a streaming interactive REPL.
 - Add multiline input, history, cancellation, queued follow-ups, file mentions,
   and concise tool progress.

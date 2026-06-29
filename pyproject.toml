@@ -51,13 +51,16 @@ no_site_packages = true
 files = [
     "src/core/config.py",
     "src/core/events.py",
+    "src/core/context.py",
     "src/core/errors.py",
     "src/core/instructions.py",
     "src/core/models.py",
     "src/core/repository.py",
     "src/core/runtime.py",
+    "src/harness",
     "src/providers",
     "src/tools",
+    "src/sessions",
 ]
 check_untyped_defs = true
 ignore_missing_imports = true

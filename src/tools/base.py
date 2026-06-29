@@ -54,15 +54,21 @@ class ToolResult:
     content: str
     data: dict[str, Any] = field(default_factory=dict)
     error: str | None = None
+    model_content: str | None = None
+    include_data_in_model: bool = True
+    artifact_ref: str | None = None
+    truncated: bool = False
 
     def to_model_text(self) -> str:
         """Serialize a stable result for the model conversation."""
         return json.dumps(
             {
                 "success": self.success,
-                "content": self.content,
-                "data": self.data,
+                "content": self.model_content if self.model_content is not None else self.content,
+                "data": self.data if self.include_data_in_model else {},
                 "error": self.error,
+                "artifact_ref": self.artifact_ref,
+                "truncated": self.truncated,
             },
             ensure_ascii=False,
         )

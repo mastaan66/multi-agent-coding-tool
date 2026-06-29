@@ -6,7 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from src.core.events import ModelEvent, ModelEventType, ModelMessage, ToolCall
+from src.core.events import (
+    ModelEvent,
+    ModelEventType,
+    ModelMessage,
+    RuntimeEventType,
+    ToolCall,
+)
 from src.core.runtime import AgentRuntime, RuntimeLimitError
 from src.tools.base import ToolContext, ToolDefinition, ToolRegistry
 from src.tools.repository import ReadFileTool
@@ -44,10 +50,18 @@ def test_runtime_executes_tool_then_returns_text(tmp_path: Path) -> None:
                         arguments={"path": "README.md"},
                     ),
                 ),
+                ModelEvent(
+                    type=ModelEventType.USAGE,
+                    usage={"input_tokens": 100, "cached_tokens": 40},
+                ),
                 ModelEvent(type=ModelEventType.COMPLETED),
             ],
             [
                 ModelEvent(type=ModelEventType.TEXT_DELTA, text="Repository inspected."),
+                ModelEvent(
+                    type=ModelEventType.USAGE,
+                    usage={"input_tokens": 120, "output_tokens": 5},
+                ),
                 ModelEvent(type=ModelEventType.COMPLETED),
             ],
         ]
@@ -64,6 +78,12 @@ def test_runtime_executes_tool_then_returns_text(tmp_path: Path) -> None:
     assert result.turns == 2
     assert len(provider.requests) == 2
     assert '"success": true' in provider.requests[1][-1].content
+    assert result.usage == {
+        "input_tokens": 220,
+        "cached_tokens": 40,
+        "output_tokens": 5,
+    }
+    assert result.events[1].type is RuntimeEventType.CONTEXT_PREPARED
 
 
 def test_runtime_stops_repeated_tool_calls(tmp_path: Path) -> None:

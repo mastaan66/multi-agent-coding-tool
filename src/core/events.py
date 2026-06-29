@@ -51,6 +51,8 @@ class ModelEvent:
 
 class RuntimeEventType(str, Enum):
     TURN_STARTED = "turn_started"
+    CONTEXT_PREPARED = "context_prepared"
+    MODEL_USAGE = "model_usage"
     TEXT_DELTA = "text_delta"
     TOOL_STARTED = "tool_started"
     TOOL_COMPLETED = "tool_completed"

@@ -5,6 +5,24 @@ Changelog, and the project uses semantic versioning.
 
 ## Unreleased
 
+### Added
+
+- Token-bounded context compilation that preserves atomic assistant/tool-call blocks.
+- Runtime context accounting and provider usage aggregation.
+- SQLite-backed sessions, append-only runtime events, and structured task ledgers.
+- Verification evidence requirements before ledger tasks can be completed.
+- Content-addressed artifact storage and bounded model projections for large tool output.
+- Continuity architecture and v0.5.0 release gates.
+- Normalized message persistence and provider-safe interrupted tool-call replay.
+- Persistent agent sessions that resume conversation history and global turn numbering.
+- Durable ORIENT-to-HANDOFF harness state with append-only transition history.
+- Atomic task/phase/session updates and schema-versioned SQLite migrations.
+- Restart-level replay, resume, and lifecycle integration coverage.
+
+### Changed
+
+- Tool results now carry explicit model-content, artifact, and truncation metadata.
+
 ## 0.3.0 - 2026-06-28
 
 ### Added
