@@ -14,7 +14,7 @@ dependencies = [
     "pydantic>=2.0.0,<3",
     "pydantic-settings>=2.0.0,<3",
     "python-dotenv>=1.0.0,<2",
-    "rich>=13.0.0,<15",
+    "rich>=15.0.0,<16",
 ]
 
 [project.optional-dependencies]
