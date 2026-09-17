@@ -4,9 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/mastaan66/multi-agent-coding-tool/actions/workflows/ci.yml"><img src="https://github.com/mastaan66/multi-agent-coding-tool/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://github.com/mastaan66/multi-agent-coding-tool/actions/workflows/release.yml"><img src="https://github.com/mastaan66/multi-agent-coding-tool/actions/workflows/release.yml/badge.svg" alt="Release binaries"></a>
   <a href="https://github.com/mastaan66/multi-agent-coding-tool/releases"><img src="https://img.shields.io/github/v/release/mastaan66/multi-agent-coding-tool?display_name=tag" alt="Latest release"></a>
-  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-55c2a3" alt="MIT License"></a>
 </p>
 
